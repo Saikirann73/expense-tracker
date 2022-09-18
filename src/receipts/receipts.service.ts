@@ -26,7 +26,7 @@ export class ReceiptsService {
     this.logger.info({
       module: "ReceiptsService",
       method: "create",
-      result: `Successfully created a receipt with id : ${result.id}`
+      result: `Successfully created a receipt with id : ${result.toString()}`
     });
     return result.toString();
   }

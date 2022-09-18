@@ -17,18 +17,20 @@ export class ReceiptsController {
   }
 
   @Get()
+  @ApiResponse({ status: 200, description: 'Gets all available reports' })
   getReceipts() {
     return this.receiptsService.getAll();
   }
 
   @Get(':id')
-  @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
+  @ApiResponse({ status: 200, description: 'Gets the report' })
   getReceiptsById(@Param('id') id: string) {
     return this.receiptsService.getById(id);
   }
 
   @Get('report/:reportType')
   @ApiParam({ name: 'reportType', enum: ReportType })
+  @ApiResponse({ status: 200, description: 'Gets the report requested.' })
   async getReport(@Param('reportType') reportType: ReportType, @Res({ passthrough: true }) res: Response) {
     res.set({
       'Content-Type': 'text/csv'

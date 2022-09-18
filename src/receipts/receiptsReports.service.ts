@@ -11,12 +11,12 @@ const ObjectsToCsv = require('objects-to-csv');
 @Injectable()
 export class ReceiptsReportsService {
     public static ReportsPath = 'src/receipts/reports/'
-    private readonly logger = new Logger(ReceiptsReportsService.name);
     constructor(
         private schedulerRegistry: SchedulerRegistry,
         private receiptsService: ReceiptsService,
         @Inject('Application_Config')
-        private applicationConfig: any) {
+        private applicationConfig: any,
+        private logger: Logger) {
         const job = new CronJob(this.applicationConfig.reportsCronInterval, async () => {
             await this.generateReports();
         });
@@ -26,25 +26,43 @@ export class ReceiptsReportsService {
     }
 
     async generateReports() {
-        const receipts = await this.receiptsService.getAll();
-        const totalCosts = receipts.reduce((a, { cost }) => a + cost, 0);
-        const receiptsReports: ReceiptReport[] = [];
-        const categoryReports: CategoryReport[] = [];
-        receipts.forEach(x => {
-            this.generateReceiptReportRecord(x, totalCosts, receiptsReports);
-            this.generateCategoryReportRecord(categoryReports, x);
-        });
+        try {
+            const receipts = await this.receiptsService.getAll();
+            const totalCosts = receipts.reduce((a, { cost }) => a + cost, 0);
+            const receiptsReports: ReceiptReport[] = [];
+            const categoryReports: CategoryReport[] = [];
+            receipts.forEach(x => {
+                this.generateReceiptReportRecord(x, totalCosts, receiptsReports);
+                this.generateCategoryReportRecord(categoryReports, x);
+            });
 
-        await this.saveCsv(`${ReceiptsReportsService.ReportsPath}/ReceiptsReport.csv`, receiptsReports)
+            await this.saveCsv(`${ReceiptsReportsService.ReportsPath}/ReceiptsReport.csv`, receiptsReports)
+            this.logger.info({
+                module: "ReceiptsReportsService",
+                method: "generateReports",
+                result: `Successfully created a receipt report`
+            });
 
-
-        categoryReports.forEach(x => {
-            const percent = ((x.count / receipts.length) * 100);
-            const percentTwoDecimals = Math.round(percent * 100) / 100
-            x.percentage = percentTwoDecimals
-        })
-        await this.saveCsv(`${ReceiptsReportsService.ReportsPath}/CategoryReport.csv`, categoryReports)
-        await this.receiptsService.deleteAll();
+            categoryReports.forEach(x => {
+                const percent = ((x.count / receipts.length) * 100);
+                const percentTwoDecimals = Math.round(percent * 100) / 100
+                x.percentage = percentTwoDecimals
+            })
+            await this.saveCsv(`${ReceiptsReportsService.ReportsPath}/CategoryReport.csv`, categoryReports)
+            this.logger.info({
+                module: "ReceiptsReportsService",
+                method: "generateReports",
+                result: `Successfully created a category report`
+            });
+            await this.receiptsService.deleteAll();
+        } catch (error) {
+            this.logger.error({
+                module: "ReceiptsReportsService",
+                method: "generateReports",
+                result: `Failed to generate the reports`,
+            });
+            throw new Error("Failed to generate the reports");
+        }
     }
 
     private generateCategoryReportRecord(categoryReport: CategoryReport[], x: Receipt) {
