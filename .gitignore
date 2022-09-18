@@ -102,3 +102,5 @@ dist
 
 # TernJS port file
 .tern-port
+src/receipts/reports/CategoryReport.csv
+src/receipts/reports/ReceiptsReport.csv
